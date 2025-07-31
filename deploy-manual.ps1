@@ -81,7 +81,8 @@ Write-Host "Force Deploy: $($Force.IsPresent)" -ForegroundColor Cyan
 try {
     if ($Force) {
         gh workflow run "Build and Deploy to Azure App Service" -f environment=$Environment -f force_deploy=true
-    } else {
+    }
+    else {
         gh workflow run "Build and Deploy to Azure App Service" -f environment=$Environment -f force_deploy=false
     }
     
@@ -95,7 +96,8 @@ try {
     Write-Host "To view workflow status:" -ForegroundColor Yellow
     Write-Host "  gh run list --workflow='Build and Deploy to Azure App Service'" -ForegroundColor Gray
     
-} catch {
+}
+catch {
     Write-Error "Failed to trigger deployment: $_"
     Write-Host ""
     Write-Host "Troubleshooting steps:" -ForegroundColor Yellow
