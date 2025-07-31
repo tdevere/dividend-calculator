@@ -43,7 +43,184 @@ This guide will help you deploy your Dividend Calculator to Microsoft Azure App 
    | `AZURE_WEBAPP_NAME` | `dividend-calculator-app` | Your Azure App Service name |
    | `AZURE_WEBAPP_PUBLISH_PROFILE` | Content of `publish-profile.xml` | Azure publish profile |
 
-#### Step 3: Push to GitHub
+#### Step 3: Choose Your Runner Environment
+
+You have two options for running your GitHub Actions workflow:
+
+##### Option A: GitHub-Hosted Runners (Default)
+- **Pros**: No setup required, always up-to-date, isolated environment
+- **Cons**: Limited to 2000 minutes/month on free tier, no customization
+- **Best for**: Most projects, quick setup, standard builds
+
+##### Option B: Self-Hosted Runners (Advanced)
+- **Pros**: Unlimited build minutes, full control, custom software, faster builds
+- **Cons**: Requires setup and maintenance, security considerations
+- **Best for**: Enterprise environments, custom requirements, high-volume builds
+
+##### 🏗️ Setting Up Self-Hosted GitHub Runners
+
+If you choose self-hosted runners, follow these steps:
+
+**1. Access Runner Configuration**
+- Go to your repository: `https://github.com/YOUR_USERNAME/dividend-calculator`
+- Navigate to **Settings** → **Actions** → **Runners**
+- Click **"New self-hosted runner"**
+- Select your platform: **Linux** (recommended) or **Windows**
+
+**2. Prepare Your Runner Machine**
+
+**Linux (Ubuntu/Debian) - Recommended:**
+```bash
+# Update system
+sudo apt update && sudo apt upgrade -y
+
+# Install required dependencies
+sudo apt install -y curl wget git nodejs npm docker.io
+
+# Install Azure CLI
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# Install Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Verify installations
+node --version  # Should be v20.x.x
+npm --version
+az --version
+docker --version
+```
+
+**Windows (PowerShell as Administrator):**
+```powershell
+# Install Chocolatey package manager
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install dependencies
+choco install -y nodejs azure-cli git docker-desktop
+
+# Verify installations
+node --version
+npm --version
+az --version
+docker --version
+```
+
+**3. Download and Configure Runner**
+
+Follow the commands provided by GitHub (they'll be customized for your repository):
+
+```bash
+# Create a folder for the runner
+mkdir actions-runner && cd actions-runner
+
+# Download the latest runner package
+curl -o actions-runner-linux-x64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+
+# Extract the installer
+tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
+
+# Configure the runner
+./config.sh --url https://github.com/YOUR_USERNAME/dividend-calculator --token YOUR_TOKEN
+```
+
+**4. Install and Start Runner as Service**
+
+**Linux (systemd):**
+```bash
+# Install the service
+sudo ./svc.sh install
+
+# Start the service
+sudo ./svc.sh start
+
+# Check status
+sudo ./svc.sh status
+
+# Enable auto-start on boot
+sudo systemctl enable actions.runner.YOUR_USERNAME-dividend-calculator.YOUR_RUNNER_NAME.service
+```
+
+**Windows (as Service):**
+```powershell
+# Run as Administrator
+.\svc.cmd install
+.\svc.cmd start
+```
+
+**5. Update GitHub Actions Workflow**
+
+Modify `.github/workflows/azure-deploy.yml` to use your self-hosted runner:
+
+```yaml
+jobs:
+  build:
+    runs-on: self-hosted  # ← Change from 'ubuntu-latest'
+    
+  deploy:
+    runs-on: self-hosted  # ← Change from 'ubuntu-latest'
+```
+
+**6. Runner Security Best Practices**
+
+```bash
+# Create dedicated user for runner
+sudo useradd -m -s /bin/bash github-runner
+sudo usermod -aG docker github-runner
+
+# Set proper permissions
+sudo chown -R github-runner:github-runner /home/github-runner/actions-runner
+
+# Configure firewall (adjust as needed)
+sudo ufw enable
+sudo ufw allow ssh
+sudo ufw allow 80
+sudo ufw allow 443
+```
+
+**7. Monitoring and Maintenance**
+
+```bash
+# Check runner status
+./run.sh --check
+
+# View runner logs
+sudo journalctl -u actions.runner.* -f
+
+# Update runner (when new versions are available)
+./config.sh remove
+# Download new version and reconfigure
+```
+
+**8. Runner Labels and Targeting**
+
+You can add custom labels to target specific runners:
+
+```bash
+# During configuration, add labels
+./config.sh --url https://github.com/YOUR_USERNAME/dividend-calculator --token YOUR_TOKEN --labels "azure,nodejs,production"
+```
+
+Then in your workflow:
+```yaml
+jobs:
+  build:
+    runs-on: [self-hosted, azure, nodejs]
+```
+
+**Troubleshooting Self-Hosted Runners:**
+
+| Issue | Solution |
+|-------|----------|
+| Runner offline | Check service: `sudo systemctl status actions.runner.*` |
+| Build fails | Verify Node.js version: `node --version` |
+| Docker issues | Add runner user to docker group: `sudo usermod -aG docker github-runner` |
+| Permission denied | Check file ownership: `sudo chown -R github-runner:github-runner ~/actions-runner` |
+| Network issues | Verify firewall and proxy settings |
+
+#### Step 4: Push to GitHub
 
 1. **Initialize Git repository** (if not already done):
    ```bash
@@ -231,6 +408,93 @@ az webapp show --resource-group dividend-calculator-rg --name dividend-calculato
 - **Application Insights**: Detailed telemetry and analytics
 - **GitHub Actions**: Build and deployment status
 
+## 🔧 GitHub Runner Management
+
+### Quick Commands Reference
+
+**Check Runner Status:**
+```bash
+# Linux
+sudo systemctl status actions.runner.*
+./run.sh --check
+
+# Windows
+.\svc.cmd status
+```
+
+**Restart Runner:**
+```bash
+# Linux
+sudo systemctl restart actions.runner.*
+sudo ./svc.sh restart
+
+# Windows
+.\svc.cmd stop
+.\svc.cmd start
+```
+
+**View Runner Logs:**
+```bash
+# Linux (live logs)
+sudo journalctl -u actions.runner.* -f
+
+# Windows (Event Viewer)
+Get-EventLog -LogName Application -Source "GitHub Actions Runner"
+```
+
+**Update Runner:**
+```bash
+# 1. Stop runner
+sudo ./svc.sh stop
+
+# 2. Remove current configuration
+./config.sh remove
+
+# 3. Download latest version
+curl -o actions-runner-linux-x64-latest.tar.gz -L https://github.com/actions/runner/releases/latest/download/actions-runner-linux-x64-2.311.0.tar.gz
+
+# 4. Extract and reconfigure
+tar xzf ./actions-runner-linux-x64-latest.tar.gz
+./config.sh --url https://github.com/YOUR_USERNAME/dividend-calculator --token NEW_TOKEN
+
+# 5. Restart service
+sudo ./svc.sh start
+```
+
+**Runner Maintenance Schedule:**
+- **Weekly**: Check runner status and logs
+- **Monthly**: Update runner software
+- **Quarterly**: Review security and access permissions
+
+### Runner Performance Optimization
+
+**For High-Volume Builds:**
+```yaml
+# .github/workflows/azure-deploy.yml
+jobs:
+  build:
+    runs-on: [self-hosted, linux, x64, high-performance]
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+```
+
+**Resource Monitoring:**
+```bash
+# Monitor CPU and Memory during builds
+htop
+# Monitor disk space
+df -h
+# Monitor Docker usage
+docker system df
+```
+
 ## 🎉 Success!
 
 Your Dividend Calculator is now live on Azure App Service with automated CI/CD! Every push to the main branch will trigger a new deployment.
@@ -242,5 +506,13 @@ Your Dividend Calculator is now live on Azure App Service with automated CI/CD! 
 3. Implement user authentication (optional)
 4. Add more dividend stocks and features
 5. Set up staging environment
+6. Scale runners based on build volume
+
+### Support Resources
+
+- **GitHub Actions Documentation**: [Self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners)
+- **Azure App Service Documentation**: [Microsoft Docs](https://docs.microsoft.com/en-us/azure/app-service/)
+- **Runner Troubleshooting**: Check the runner logs and GitHub Actions status page
+- **Community Support**: Create an issue in your GitHub repository
 
 Need help? Check the [Azure App Service documentation](https://docs.microsoft.com/en-us/azure/app-service/) or create an issue in your GitHub repository.

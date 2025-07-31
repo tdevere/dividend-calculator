@@ -3,14 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "description": "High-performance dividend investment calculator and portfolio analyzer",
-  "keywords": ["dividend", "investment", "calculator", "portfolio", "fintech"],
+  "keywords": [
+    "dividend",
+    "investment",
+    "calculator",
+    "portfolio",
+    "fintech"
+  ],
   "author": "Your Name",
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "fix-all": "npm run lint:fix && npm run format",
+    "build:analyze": "ANALYZE=true npm run build",
+    "clean": "rm -rf .next node_modules/.cache",
+    "reinstall": "rm -rf node_modules package-lock.json && npm install"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -31,6 +45,7 @@
     "@types/react-dom": "^19.1.7",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
