@@ -1,0 +1,176 @@
+name: Deploy Feature Branch to Dev Slot
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package*.json'
+      - 'next.config.*'
+      - 'tailwind.config.*'
+      - 'tsconfig.json'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Feature branch to deploy'
+        required: false
+        default: ''
+        type: string
+      force_deploy:
+        description: 'Force deploy even without changes'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: feature-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-feature:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Feature Deployment Info
+        run: |
+          echo "🚀 Deploying feature branch to dev slot"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Event: ${{ github.event_name }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Quality Checks
+        run: |
+          echo "🔍 Running quality checks..."
+          
+          # Run TypeScript check
+          echo "📝 Running TypeScript checks..."
+          npm run type-check || {
+            echo "❌ TypeScript errors found, stopping deployment"
+            exit 1
+          }
+          
+          # Run ESLint
+          echo "📝 Running ESLint..."
+          npm run lint || {
+            echo "❌ ESLint errors found, attempting auto-fix..."
+            npm run lint:fix || {
+              echo "❌ Lint errors could not be auto-fixed, stopping deployment"
+              exit 1
+            }
+          }
+
+      - name: Build Application
+        run: |
+          echo "🏗️ Building Next.js application for feature deployment..."
+          npm run build
+
+      - name: Prepare deployment package
+        run: |
+          echo "📦 Preparing deployment package..."
+          mkdir -p deploy-package
+          
+          # Copy built application
+          cp -r .next deploy-package/
+          cp -r public deploy-package/
+          cp package*.json deploy-package/
+          cp next.config.* deploy-package/ 2>/dev/null || true
+          
+          # Create a basic web.config for Azure
+          cat > deploy-package/web.config << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <system.webServer>
+              <handlers>
+                <add name="iisnode" path="server.js" verb="*" modules="iisnode"/>
+              </handlers>
+              <rewrite>
+                <rules>
+                  <rule name="StaticContent">
+                    <action type="Rewrite" url="public{REQUEST_URI}"/>
+                  </rule>
+                  <rule name="DynamicContent">
+                    <conditions>
+                      <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
+                    </conditions>
+                    <action type="Rewrite" url="server.js"/>
+                  </rule>
+                </rules>
+              </rewrite>
+            </system.webServer>
+          </configuration>
+          EOF
+
+      - name: Deploy to Azure Dev Slot
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          slot-name: 'dev'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_DEV }}
+          package: ./deploy-package
+
+      - name: Feature Deployment Summary
+        run: |
+          echo "## 🎯 Feature Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed to:** Azure App Service Dev Slot" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links:" >> $GITHUB_STEP_SUMMARY
+          echo "- [🌐 Feature Site (Dev Slot)](https://${{ secrets.AZURE_WEBAPP_NAME }}-dev.azurewebsites.net)" >> $GITHUB_STEP_SUMMARY
+          echo "- [📋 Production Site](https://${{ secrets.AZURE_WEBAPP_NAME }}.azurewebsites.net)" >> $GITHUB_STEP_SUMMARY
+          echo "- [📊 Compare Changes](https://github.com/${{ github.repository }}/compare/main...${{ github.ref_name }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Quality Checks Passed:" >> $GITHUB_STEP_SUMMARY
+          echo "- TypeScript compilation ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- ESLint validation ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Build successful ✅" >> $GITHUB_STEP_SUMMARY
+
+      - name: Update PR with deployment info
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find PR for this branch
+          PR_NUMBER=$(gh pr list --head "${{ github.ref_name }}" --json number --jq '.[0].number' 2>/dev/null || echo "")
+          
+          if [ ! -z "$PR_NUMBER" ] && [ "$PR_NUMBER" != "null" ]; then
+            echo "📝 Adding deployment info to PR #$PR_NUMBER"
+            
+            # Create comment on PR
+            gh pr comment "$PR_NUMBER" --body "## 🚀 Feature Deployed to Dev Slot
+
+          Your feature branch has been successfully deployed for testing!
+
+          **🌐 Test URL:** https://${{ secrets.AZURE_WEBAPP_NAME }}-dev.azurewebsites.net
+
+          **📊 Deployment Details:**
+          - Branch: \`${{ github.ref_name }}\`
+          - Commit: \`${{ github.sha }}\`
+          - Quality checks: ✅ Passed
+          - Build: ✅ Successful
+
+          **🧪 Testing Instructions:**
+          1. Visit the test URL above
+          2. Test your new feature
+          3. Verify it works as expected
+          4. Report any issues in this PR
+
+          > This is a temporary deployment slot for feature testing. Changes will be promoted to production when this PR is merged."
+          else
+            echo "No PR found for this branch, skipping PR comment"
+          fi
