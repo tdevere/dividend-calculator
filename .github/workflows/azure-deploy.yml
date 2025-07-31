@@ -32,6 +32,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Create production node_modules
+        run: npm ci --production
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -42,6 +45,7 @@ jobs:
             package.json
             package-lock.json
             next.config.ts
+            node_modules/
 
   deploy:
     needs: build
@@ -62,18 +66,50 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-files
+          path: ./artifacts
 
       - name: Create deployment package
         run: |
           # Create a clean deployment directory
           mkdir -p deploy
           
-          # Copy necessary files
-          cp -r .next deploy/
-          cp -r public deploy/
-          cp package.json deploy/
-          cp package-lock.json deploy/
-          cp next.config.ts deploy/
+          # Copy build artifacts
+          cp -r artifacts/.next deploy/
+          cp -r artifacts/public deploy/
+          cp artifacts/package.json deploy/
+          cp artifacts/package-lock.json deploy/
+          cp artifacts/next.config.ts deploy/
+          cp -r artifacts/node_modules deploy/
+          
+          # Create server.js for Azure
+          cat > deploy/server.js << 'EOF'
+          const { createServer } = require('http')
+          const { parse } = require('url')
+          const next = require('next')
+          
+          const dev = process.env.NODE_ENV !== 'production'
+          const hostname = process.env.WEBSITE_HOSTNAME || 'localhost'
+          const port = process.env.PORT || 3000
+          
+          const app = next({ dev, hostname, port })
+          const handle = app.getRequestHandler()
+          
+          app.prepare().then(() => {
+            createServer(async (req, res) => {
+              try {
+                const parsedUrl = parse(req.url, true)
+                await handle(req, res, parsedUrl)
+              } catch (err) {
+                console.error('Error occurred handling', req.url, err)
+                res.statusCode = 500
+                res.end('internal server error')
+              }
+            }).listen(port, (err) => {
+              if (err) throw err
+              console.log(`> Ready on http://${hostname}:${port}`)
+            })
+          })
+          EOF
           
           # Create web.config for Azure
           cat > deploy/web.config << 'EOF'
