@@ -3,8 +3,37 @@ name: Build and Deploy to Azure App Service
 on:
   push:
     branches: [main, master]
+    # Only deploy on main branch when specific paths change or deployment files are modified
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package*.json'
+      - 'next.config.*'
+      - 'tailwind.config.*'
+      - 'tsconfig.json'
+      - '.github/workflows/azure-deploy.yml'
   pull_request:
     branches: [main, master]
+    # Build and test PRs but don't deploy
+  workflow_dispatch:
+    # Allow manual deployment
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      force_deploy:
+        description: 'Force deploy even without changes'
+        required: false
+        default: false
+        type: boolean
+  release:
+    types: [published]
+    # Deploy on GitHub releases
 
 # Ensure only one deployment runs at a time
 concurrency:
@@ -97,9 +126,27 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    # Only deploy to Azure on:
+    # 1. Push to main/master with relevant file changes
+    # 2. Manual workflow dispatch
+    # 3. GitHub releases
+    # 4. Force deploy flag is true
+    if: |
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'release') ||
+      (github.event.inputs.force_deploy == 'true')
 
     steps:
+      - name: Deployment Information
+        run: |
+          echo "🚀 Deploying to Azure App Service"
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Environment: ${{ github.event.inputs.environment || 'production' }}"
+          echo "Force Deploy: ${{ github.event.inputs.force_deploy || 'false' }}"
+          echo "Commit: ${{ github.sha }}"
+      
       - name: Download deployment package
         uses: actions/download-artifact@v4
         with:

@@ -250,11 +250,45 @@ jobs:
    ```
 
 3. **GitHub Actions will automatically**:
-   - Build your application
-   - Run tests and linting
-   - Deploy to Azure App Service
+   - Build your application when code changes
+   - Run tests and linting on every push/PR
+   - **Deploy only when appropriate** (see deployment triggers below)
    - Monitor the deployment in the **Actions** tab
    - **Queue builds when multiple pushes occur** (only one deployment at a time)
+
+### 🎯 Smart Deployment Triggers
+
+To avoid unnecessary deployments, the system only deploys when:
+
+1. **📁 Relevant Files Changed**: Only deploys when actual application code changes
+   - `src/**` - Source code changes
+   - `public/**` - Static assets
+   - `package*.json` - Dependencies
+   - Configuration files (`next.config.*`, `tailwind.config.*`, etc.)
+
+2. **🎯 Manual Deployment**: Use when you want to deploy on-demand
+   ```bash
+   # Windows PowerShell
+   .\deploy-manual.ps1 -Environment production
+   
+   # Linux/Mac
+   ./deploy-manual.sh production
+   
+   # Force deploy regardless of changes
+   .\deploy-manual.ps1 -Force
+   ```
+
+3. **🏷️ GitHub Releases**: Automatically deploys when you create a release
+
+4. **🔧 Workflow Dispatch**: Manual trigger via GitHub Actions UI
+
+### 🚫 What WON'T Trigger Deployment
+
+- Documentation changes (`*.md` files)
+- Workflow file changes (except the deploy workflow itself)
+- Feature branch commits (only builds/tests)
+- README updates
+- Configuration-only commits that don't affect the app
 
 ### Concurrency Control
 
