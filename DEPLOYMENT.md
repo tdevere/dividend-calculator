@@ -254,6 +254,28 @@ jobs:
    - Run tests and linting
    - Deploy to Azure App Service
    - Monitor the deployment in the **Actions** tab
+   - **Queue builds when multiple pushes occur** (only one deployment at a time)
+
+### Concurrency Control
+
+The workflows are configured with concurrency controls to prevent conflicts:
+
+- **Azure Deployment**: Only one deployment per branch at a time
+- **Feature Automation**: Only one feature generation at a time
+- **Build Queuing**: New builds wait for current ones to complete
+
+**Concurrency Configuration:**
+```yaml
+# For deployment workflows
+concurrency:
+  group: azure-deploy-${{ github.ref }}
+  cancel-in-progress: false  # Wait for deployment to complete
+
+# For feature automation
+concurrency:
+  group: feature-automation
+  cancel-in-progress: true   # Cancel old feature requests
+```
 
 ### Option 2: Manual Deployment
 
@@ -376,6 +398,11 @@ Set these in Azure App Service **Configuration** → **Application settings**:
    - Consider upgrading to higher SKU (S1, P1V2)
    - Enable Application Insights performance monitoring
    - Optimize build output with `output: 'standalone'`
+
+4. **Workflow Concurrency Issues**:
+   - Multiple builds queued: Check the Actions tab for queued workflows
+   - Deployment stuck: Cancel stuck workflows in GitHub Actions
+   - Build conflicts: Ensure `cancel-in-progress` is set appropriately
 
 ### Useful Commands
 

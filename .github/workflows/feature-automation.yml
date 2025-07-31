@@ -19,6 +19,11 @@ on:
           - integration
           - enhancement
 
+# Ensure only one feature automation runs at a time
+concurrency:
+  group: feature-automation
+  cancel-in-progress: true
+
 jobs:
   analyze_feature_request:
     runs-on: ubuntu-latest
