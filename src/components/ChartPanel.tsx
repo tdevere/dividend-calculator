@@ -55,7 +55,7 @@ export default function ChartPanel({ results }: ChartPanelProps) {
   }
 
   // Prepare chart data
-  const chartData = results.yearlyResults.map((year, index) => ({
+  const chartData = results.yearlyResults.map((year) => ({
     year: year.year,
     portfolioValue: year.portfolioValue,
     totalInvestment: year.totalInvestment,
