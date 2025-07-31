@@ -199,8 +199,8 @@ jobs:
 **🌐 Live Preview:** https://dividend-calculator-app-dev.azurewebsites.net
 
 ### 📋 Deployment Details
-- **Branch:** \\\`${context.ref.replace('refs/heads/', '')}\\\`
-- **Commit:** \\\`${context.sha.substring(0, 7)}\\\`
+- **Branch:** \`${context.ref.replace('refs/heads/', '')}\`
+- **Commit:** \`${context.sha.substring(0, 7)}\`
 - **Environment:** Development Slot
 - **Status:** ✅ Successfully Deployed
 
