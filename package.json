@@ -24,7 +24,9 @@
     "fix-all": "npm run lint:fix && npm run format",
     "build:analyze": "ANALYZE=true npm run build",
     "clean": "rm -rf .next node_modules/.cache",
-    "reinstall": "rm -rf node_modules package-lock.json && npm install"
+    "reinstall": "rm -rf node_modules package-lock.json && npm install",
+    "feature": "node create-feature.js",
+    "feature:help": "node create-feature.js"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4",

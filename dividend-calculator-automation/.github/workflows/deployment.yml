@@ -1,0 +1,36 @@
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to Azure
+        env:
+          AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          echo "${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}" > publish-profile.xml
+          az webapp deployment source config-zip --resource-group dividend-calculator-rg --name $AZURE_WEBAPP_NAME --src publish-profile.xml
+
+      - name: Clean up
+        run: rm publish-profile.xml

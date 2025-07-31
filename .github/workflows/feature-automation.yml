@@ -1,0 +1,545 @@
+name: 🤖 Automated Feature Development
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      feature_description:
+        description: 'Feature description'
+        required: true
+        type: string
+      feature_type:
+        description: 'Feature type'
+        required: true
+        type: choice
+        options:
+          - component
+          - utility
+          - integration
+          - enhancement
+      auto_merge:
+        description: 'Auto-merge if tests pass'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  analyze_feature_request:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'feature-request') || github.event_name == 'workflow_dispatch'
+    outputs:
+      feature_branch: ${{ steps.create_branch.outputs.branch_name }}
+      feature_type: ${{ steps.analyze.outputs.feature_type }}
+      feature_files: ${{ steps.analyze.outputs.feature_files }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Analyze Feature Request
+        id: analyze
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const featureDescription = context.payload.issue?.body || context.payload.inputs?.feature_description;
+            const featureType = context.payload.inputs?.feature_type || 'enhancement';
+            
+            console.log('Feature Description:', featureDescription);
+            console.log('Feature Type:', featureType);
+            
+            // Determine what files need to be created based on description
+            const files = [];
+            const lowerDesc = featureDescription.toLowerCase();
+            
+            if (lowerDesc.includes('component') || lowerDesc.includes('ui') || lowerDesc.includes('button') || lowerDesc.includes('chart')) {
+              files.push('component');
+            }
+            if (lowerDesc.includes('calculation') || lowerDesc.includes('utility') || lowerDesc.includes('function')) {
+              files.push('utility');
+            }
+            if (lowerDesc.includes('type') || lowerDesc.includes('interface') || lowerDesc.includes('model')) {
+              files.push('types');
+            }
+            
+            core.setOutput('feature_type', featureType);
+            core.setOutput('feature_files', JSON.stringify(files));
+
+      - name: Create Feature Branch
+        id: create_branch
+        run: |
+          FEATURE_NAME=$(echo "${{ github.event.issue.title || inputs.feature_description }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | cut -c1-50)
+          BRANCH_NAME="feature/auto-${FEATURE_NAME}-$(date +%s)"
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+  generate_code:
+    needs: analyze_feature_request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Feature Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.analyze_feature_request.outputs.feature_branch }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Feature Code
+        id: generate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            const featureRequest = `${{ github.event.issue.body || inputs.feature_description }}`;
+            const featureType = '${{ needs.analyze_feature_request.outputs.feature_type }}';
+            const featureFiles = JSON.parse('${{ needs.analyze_feature_request.outputs.feature_files }}');
+            
+            console.log('Generating code for:', featureRequest);
+            console.log('Feature type:', featureType);
+            console.log('Files to generate:', featureFiles);
+            
+            // Generate component if needed
+            if (featureFiles.includes('component')) {
+              const componentName = extractComponentName(featureRequest);
+              const componentCode = generateReactComponent(componentName, featureRequest);
+              const componentPath = `src/components/${componentName}.tsx`;
+              
+              fs.writeFileSync(componentPath, componentCode);
+              console.log('Generated component:', componentPath);
+            }
+            
+            // Generate utility if needed
+            if (featureFiles.includes('utility')) {
+              const utilityName = extractUtilityName(featureRequest);
+              const utilityCode = generateUtility(utilityName, featureRequest);
+              const utilityPath = `src/utils/${utilityName}.ts`;
+              
+              fs.writeFileSync(utilityPath, utilityCode);
+              console.log('Generated utility:', utilityPath);
+            }
+            
+            // Generate types if needed
+            if (featureFiles.includes('types')) {
+              const typeName = extractTypeName(featureRequest);
+              const typeCode = generateTypes(typeName, featureRequest);
+              const typePath = `src/types/${typeName}.ts`;
+              
+              fs.writeFileSync(typePath, typeCode);
+              console.log('Generated types:', typePath);
+            }
+            
+            // Update main page to include the new feature (basic integration)
+            if (featureFiles.includes('component')) {
+              const componentName = extractComponentName(featureRequest);
+              updateMainPage(componentName);
+            }
+            
+            function extractComponentName(request) {
+              const words = request.toLowerCase().match(/\b\w+/g) || [];
+              const componentWords = words.filter(word => 
+                !['add', 'create', 'new', 'component', 'feature', 'implement'].includes(word)
+              ).slice(0, 2);
+              
+              return componentWords.map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join('') || 'NewFeature';
+            }
+            
+            function extractUtilityName(request) {
+              const words = request.toLowerCase().match(/\b\w+/g) || [];
+              return words.find(word => 
+                ['calculator', 'validator', 'formatter', 'parser', 'helper'].some(util => 
+                  word.includes(util)
+                )
+              ) || 'newUtility';
+            }
+            
+            function extractTypeName(request) {
+              const words = request.toLowerCase().match(/\b\w+/g) || [];
+              return words.find(word => 
+                ['data', 'config', 'options', 'params', 'settings'].some(type => 
+                  word.includes(type)
+                )
+              ) || 'newType';
+            }
+            
+            function generateReactComponent(name, description) {
+              return `"use client";
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/utils/utils';
+
+interface ${name}Props {
+  className?: string;
+  // Add more props based on requirements
+}
+
+/**
+ * ${name} Component
+ * 
+ * Generated based on: ${description}
+ * 
+ * @param props - Component props
+ */
+export const ${name}: React.FC<${name}Props> = ({
+  className,
+  ...props
+}) => {
+  const [isActive, setIsActive] = useState(false);
+  
+  return (
+    <motion.div
+      className={cn(
+        "rounded-lg border border-gray-200 bg-white p-4 shadow-sm",
+        "hover:shadow-md transition-shadow duration-200",
+        className
+      )}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      {...props}
+    >
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          ${name}
+        </h3>
+        
+        <p className="text-sm text-gray-600">
+          Feature implemented based on: "${description}"
+        </p>
+        
+        <button
+          onClick={() => setIsActive(!isActive)}
+          className={cn(
+            "px-4 py-2 rounded-md font-medium transition-colors",
+            isActive
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          )}
+        >
+          {isActive ? 'Active' : 'Inactive'}
+        </button>
+        
+        {isActive && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mt-4 p-3 bg-blue-50 rounded-md"
+          >
+            <p className="text-sm text-blue-800">
+              ${name} is now active! Implement your specific functionality here.
+            </p>
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
+export default ${name};`;
+            }
+            
+            function generateUtility(name, description) {
+              return `/**
+ * ${name} Utility
+ * 
+ * Generated based on: ${description}
+ */
+
+export interface ${name.charAt(0).toUpperCase() + name.slice(1)}Options {
+  // Define options based on requirements
+  precision?: number;
+  format?: 'percentage' | 'currency' | 'decimal';
+}
+
+/**
+ * Main ${name} function
+ * 
+ * @param input - Input data to process
+ * @param options - Configuration options
+ * @returns Processed result
+ */
+export function ${name}(
+  input: any,
+  options: ${name.charAt(0).toUpperCase() + name.slice(1)}Options = {}
+): any {
+  const { precision = 2, format = 'decimal' } = options;
+  
+  // Implementation based on feature request: "${description}"
+  
+  if (typeof input === 'number') {
+    const result = parseFloat(input.toFixed(precision));
+    
+    switch (format) {
+      case 'percentage':
+        return \`\${result}%\`;
+      case 'currency':
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+        }).format(result);
+      default:
+        return result;
+    }
+  }
+  
+  return input;
+}
+
+/**
+ * Validation function for ${name}
+ * 
+ * @param input - Input to validate
+ * @returns Whether input is valid
+ */
+export function validate${name.charAt(0).toUpperCase() + name.slice(1)}Input(input: any): boolean {
+  // Add validation logic based on requirements
+  return input != null;
+}
+
+export default ${name};`;
+            }
+            
+            function generateTypes(name, description) {
+              return `/**
+ * Type definitions for ${name}
+ * 
+ * Generated based on: ${description}
+ */
+
+export interface ${name.charAt(0).toUpperCase() + name.slice(1)} {
+  id: string;
+  name: string;
+  value: number;
+  createdAt: Date;
+  updatedAt: Date;
+  // Add more properties based on requirements
+}
+
+export interface ${name.charAt(0).toUpperCase() + name.slice(1)}Config {
+  enabled: boolean;
+  settings: Record<string, any>;
+  // Add configuration properties
+}
+
+export interface ${name.charAt(0).toUpperCase() + name.slice(1)}Result {
+  success: boolean;
+  data?: ${name.charAt(0).toUpperCase() + name.slice(1)};
+  error?: string;
+  // Add result properties
+}
+
+export type ${name.charAt(0).toUpperCase() + name.slice(1)}Status = 'pending' | 'processing' | 'completed' | 'failed';
+
+export const DEFAULT_${name.toUpperCase()}_CONFIG: ${name.charAt(0).toUpperCase() + name.slice(1)}Config = {
+  enabled: true,
+  settings: {},
+};`;
+            }
+            
+            function updateMainPage(componentName) {
+              try {
+                const mainPagePath = 'src/app/page.tsx';
+                let content = fs.readFileSync(mainPagePath, 'utf8');
+                
+                // Add import statement
+                const importStatement = `import ${componentName} from "@/components/${componentName}";`;
+                if (!content.includes(importStatement)) {
+                  const importSection = content.indexOf('import StockGrid');
+                  const insertPosition = content.indexOf('\n', importSection) + 1;
+                  content = content.slice(0, insertPosition) + importStatement + '\n' + content.slice(insertPosition);
+                }
+                
+                // Add component to the render
+                const componentUsage = `        <${componentName} className="mt-6" />`;
+                if (!content.includes(componentUsage)) {
+                  const insertPosition = content.lastIndexOf('</motion.div>');
+                  content = content.slice(0, insertPosition) + componentUsage + '\n\n        ' + content.slice(insertPosition);
+                }
+                
+                fs.writeFileSync(mainPagePath, content);
+                console.log('Updated main page with new component');
+              } catch (error) {
+                console.log('Could not update main page:', error.message);
+              }
+            }
+
+      - name: Commit Generated Code
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add .
+          git commit -m "🤖 Auto-generated feature code
+
+          Feature: ${{ github.event.issue.title || inputs.feature_description }}
+          Type: ${{ needs.analyze_feature_request.outputs.feature_type }}
+          Generated on: $(date)
+          Branch: ${{ needs.analyze_feature_request.outputs.feature_branch }}"
+          git push origin ${{ needs.analyze_feature_request.outputs.feature_branch }}
+
+  test_and_validate:
+    needs: [analyze_feature_request, generate_code]
+    runs-on: ubuntu-latest
+    outputs:
+      tests_passed: ${{ steps.final_check.outputs.all_passed }}
+    steps:
+      - name: Checkout Feature Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.analyze_feature_request.outputs.feature_branch }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Type Check
+        id: typecheck
+        run: |
+          if npm run type-check; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "passed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run ESLint
+        id: eslint
+        run: |
+          if npm run lint; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "passed=false" >> $GITHUB_OUTPUT
+            npm run lint:fix || true
+          fi
+
+      - name: Build Application
+        id: build
+        run: |
+          if npm run build; then
+            echo "passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "passed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit Auto-fixes
+        if: steps.eslint.outputs.passed == 'false'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add .
+          git commit -m "🔧 Auto-fix linting issues" || echo "No changes to commit"
+          git push origin ${{ needs.analyze_feature_request.outputs.feature_branch }} || echo "No changes to push"
+
+      - name: Final Validation Check
+        id: final_check
+        run: |
+          echo "Running final validation..."
+          npm run type-check
+          npm run lint
+          npm run build
+          echo "all_passed=true" >> $GITHUB_OUTPUT
+
+  create_pull_request:
+    needs: [analyze_feature_request, generate_code, test_and_validate]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Pull Request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pullRequest } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🤖 Auto-generated: ${{ github.event.issue.title || inputs.feature_description }}`,
+              head: '${{ needs.analyze_feature_request.outputs.feature_branch }}',
+              base: 'main',
+              body: `## 🤖 Automated Feature Implementation
+
+            **Original Request:** ${{ github.event.issue.title || inputs.feature_description }}
+            
+            **Feature Type:** ${{ needs.analyze_feature_request.outputs.feature_type }}
+            
+            **Generated Files:**
+            - ✅ React Components (if applicable)
+            - ✅ Utility Functions (if applicable)  
+            - ✅ Type Definitions (if applicable)
+            - ✅ Integration with main page
+            
+            **Validation Status:**
+            - ✅ TypeScript check passed
+            - ✅ ESLint validation passed
+            - ✅ Build successful
+            
+            **Auto-generated on:** $(date)
+            
+            This pull request was automatically created by the feature automation system.
+            
+            **Review Checklist:**
+            - [ ] Code quality meets standards
+            - [ ] Feature works as expected
+            - [ ] Tests pass
+            - [ ] Documentation updated
+            
+            **Related Issue:** ${{ github.event.issue ? format('#{0}', github.event.issue.number) : 'Manual trigger' }}
+            
+            **Next Steps:**
+            1. Review the generated code
+            2. Test the feature functionality
+            3. Approve and merge to deploy to Azure
+            `,
+              draft: false
+            });
+            
+            // Add labels
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pullRequest.number,
+              labels: ['auto-generated', 'feature', 'needs-review']
+            });
+            
+            console.log(`Created PR #${pullRequest.number}: ${pullRequest.html_url}`);
+
+      - name: Auto-merge if requested and tests pass
+        if: github.event.inputs.auto_merge == 'true' && needs.test_and_validate.outputs.tests_passed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Wait a moment for PR to be fully created
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: '${{ needs.analyze_feature_request.outputs.feature_branch }}',
+              state: 'open'
+            });
+            
+            if (pulls.data.length > 0) {
+              const pr = pulls.data[0];
+              
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                commit_title: `🤖 Auto-merge: ${pr.title}`,
+                merge_method: 'squash'
+              });
+              
+              console.log('PR auto-merged successfully!');
+            }

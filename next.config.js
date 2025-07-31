@@ -54,7 +54,7 @@ const nextConfig = {
             ...config.resolve.alias,
             '@': require('path').join(__dirname, 'src'),
         };
-        
+
         if (!isServer) {
             config.resolve.fallback = {
                 ...config.resolve.fallback,
