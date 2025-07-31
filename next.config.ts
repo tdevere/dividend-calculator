@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
-  // Enable standalone output for Azure App Service
-  output: "standalone",
+  // Disable standalone output for initial Azure deployment
+  // output: "standalone",
 
   // Optimize for production deployment
   poweredByHeader: false,
