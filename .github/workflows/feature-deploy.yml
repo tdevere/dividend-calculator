@@ -29,7 +29,6 @@ concurrency:
 jobs:
   deploy-to-dev:
     runs-on: ubuntu-latest
-    environment: development
 
     steps:
       - name: Deployment Information
