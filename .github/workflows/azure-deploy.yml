@@ -32,18 +32,26 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Create production node_modules
-        run: npm ci --production
-
       - name: Prepare deployment package
         run: |
           mkdir -p deploy-package
-          cp -r .next deploy-package/
+          
+          # Copy source files needed for Azure build
+          cp -r src deploy-package/
           cp -r public deploy-package/
           cp package.json deploy-package/
           cp package-lock.json deploy-package/
           cp next.config.js deploy-package/
-          cp -r node_modules deploy-package/
+          cp tsconfig.json deploy-package/
+          cp tailwind.config.ts deploy-package/
+          cp postcss.config.mjs deploy-package/
+          cp eslint.config.mjs deploy-package/
+          cp next-env.d.ts deploy-package/
+          
+          # Copy built files (optional, Azure will rebuild)
+          if [ -d ".next" ]; then
+            cp -r .next deploy-package/
+          fi
           
           # Create server.js for Azure
           cat > deploy-package/server.js << 'EOF'
@@ -78,7 +86,7 @@ jobs:
       - name: Upload deployment package
         uses: actions/upload-artifact@v4
         with:
-          name: deployment-package
+          name: source-package
           path: deploy-package/
 
   deploy:
@@ -90,7 +98,7 @@ jobs:
       - name: Download deployment package
         uses: actions/download-artifact@v4
         with:
-          name: deployment-package
+          name: source-package
           path: ./deploy
 
       - name: Create web.config for Azure
