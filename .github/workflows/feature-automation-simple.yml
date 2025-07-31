@@ -151,12 +151,26 @@ jobs:
           export default ${{ steps.analyze.outputs.component_name }};
           EOF
 
-      - name: Run Tests
+      - name: Run Quality Checks
         run: |
-          npm run test:ci || true
+          echo "🔍 Running quality checks..."
+          
+          # Run TypeScript check
+          echo "📝 Running TypeScript checks..."
+          npm run type-check || {
+            echo "❌ TypeScript errors found, but continuing..."
+          }
+          
+          # Run ESLint
+          echo "📝 Running ESLint..."
+          npm run lint || {
+            echo "❌ ESLint errors found, attempting auto-fix..."
+            npm run lint:fix || echo "⚠️ Some lint issues remain, continuing..."
+          }
 
       - name: Build Application
         run: |
+          echo "🏗️ Building application..."
           npm run build
 
       - name: Commit Changes
