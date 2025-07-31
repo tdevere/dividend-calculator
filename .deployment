@@ -1,0 +1,20 @@
+# Azure App Service Configuration for Next.js
+
+# Node.js version
+NODE_VERSION=20.11.0
+
+# Build commands
+PRE_BUILD_COMMAND="npm ci"
+BUILD_COMMAND="npm run build"
+
+# Start command
+START_COMMAND="npm start"
+
+# Environment variables
+NODE_ENV=production
+PORT=8080
+
+# Next.js specific settings
+NEXTJS_BUILD_TARGET=standalone
+NEXTJS_IGNORE_ESLINT=false
+NEXTJS_IGNORE_TYPECHECK=false

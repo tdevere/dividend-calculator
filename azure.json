@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "defaultProvider": "azure",
+  "providers": {
+    "azure": {
+      "app": {
+        "resourceGroupName": "dividend-calculator-rg",
+        "appServicePlanName": "dividend-calculator-plan",
+        "appName": "dividend-calculator-app",
+        "location": "East US",
+        "sku": "B1",
+        "runtime": "NODE|20-lts"
+      }
+    }
+  }
+}
