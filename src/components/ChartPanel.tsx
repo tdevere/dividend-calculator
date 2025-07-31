@@ -1,34 +1,37 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Area,
   AreaChart,
   Bar,
   BarChart,
-  Legend
-} from 'recharts';
-import { BarChart3, TrendingUp, Calendar, DollarSign } from 'lucide-react';
-import { SimulationResults } from '@/types/investment';
-import { formatCurrency, formatCurrencyDetailed } from '@/utils/dividendCalculator';
-import { fadeInUp, chartColors, cn } from '@/utils/utils';
+  Legend,
+} from "recharts";
+import { BarChart3, TrendingUp, Calendar, DollarSign } from "lucide-react";
+import { SimulationResults } from "@/types/investment";
+import {
+  formatCurrency,
+  formatCurrencyDetailed,
+} from "@/utils/dividendCalculator";
+import { fadeInUp, chartColors, cn } from "@/utils/utils";
 
 interface ChartPanelProps {
   results: SimulationResults | null;
 }
 
-type ChartType = 'portfolio' | 'income' | 'cumulative' | 'annual';
+type ChartType = "portfolio" | "income" | "cumulative" | "annual";
 
 export default function ChartPanel({ results }: ChartPanelProps) {
-  const [activeChart, setActiveChart] = useState<ChartType>('portfolio');
+  const [activeChart, setActiveChart] = useState<ChartType>("portfolio");
 
   if (!results) {
     return (
@@ -40,8 +43,12 @@ export default function ChartPanel({ results }: ChartPanelProps) {
           <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
             <BarChart3 className="w-8 h-8 text-slate-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-300 mb-2">No Data Available</h3>
-          <p className="text-slate-500">Adjust your investment parameters to see projections.</p>
+          <h3 className="text-lg font-semibold text-slate-300 mb-2">
+            No Data Available
+          </h3>
+          <p className="text-slate-500">
+            Adjust your investment parameters to see projections.
+          </p>
         </div>
       </motion.div>
     );
@@ -59,20 +66,24 @@ export default function ChartPanel({ results }: ChartPanelProps) {
 
   const monthlyIncomeData = results.monthlyResults
     .filter((_, index) => index % 3 === 0) // Show every 3rd month for clarity
-    .map(month => ({
+    .map((month) => ({
       month: `M${month.month}`,
       income: month.monthlyDividendIncome,
       portfolioValue: month.portfolioValue,
     }));
 
   const chartTabs = [
-    { id: 'portfolio', label: 'Portfolio Growth', icon: TrendingUp },
-    { id: 'income', label: 'Monthly Income', icon: Calendar },
-    { id: 'cumulative', label: 'Cumulative Returns', icon: DollarSign },
-    { id: 'annual', label: 'Annual Summary', icon: BarChart3 },
+    { id: "portfolio", label: "Portfolio Growth", icon: TrendingUp },
+    { id: "income", label: "Monthly Income", icon: Calendar },
+    { id: "cumulative", label: "Cumulative Returns", icon: DollarSign },
+    { id: "annual", label: "Annual Summary", icon: BarChart3 },
   ];
 
-  const CustomTooltip = ({ active, payload, label }: {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
     active?: boolean;
     payload?: Array<{
       value: number;
@@ -86,7 +97,11 @@ export default function ChartPanel({ results }: ChartPanelProps) {
         <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-600/50 rounded-lg p-3 shadow-xl">
           <p className="text-slate-300 font-medium mb-2">{`Year ${label}`}</p>
           {payload.map((entry, entryIndex) => (
-            <p key={entryIndex} className="text-sm" style={{ color: entry.color }}>
+            <p
+              key={entryIndex}
+              className="text-sm"
+              style={{ color: entry.color }}
+            >
               {entry.name}: {formatCurrency(entry.value)}
             </p>
           ))}
@@ -98,29 +113,57 @@ export default function ChartPanel({ results }: ChartPanelProps) {
 
   const renderChart = () => {
     switch (activeChart) {
-      case 'portfolio':
+      case "portfolio":
         return (
           <ResponsiveContainer width="100%" height={400}>
             <AreaChart data={chartData}>
               <defs>
-                <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0}/>
+                <linearGradient
+                  id="portfolioGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor={chartColors.primary}
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={chartColors.primary}
+                    stopOpacity={0}
+                  />
                 </linearGradient>
-                <linearGradient id="investmentGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={chartColors.accent} stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor={chartColors.accent} stopOpacity={0}/>
+                <linearGradient
+                  id="investmentGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor={chartColors.accent}
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={chartColors.accent}
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="year" 
+              <XAxis
+                dataKey="year"
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
                 tickFormatter={(value) => formatCurrency(value)}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -147,29 +190,30 @@ export default function ChartPanel({ results }: ChartPanelProps) {
           </ResponsiveContainer>
         );
 
-      case 'income':
+      case "income":
         return (
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={monthlyIncomeData.slice(0, 40)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="month" 
+              <XAxis
+                dataKey="month"
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
                 tickFormatter={(value) => formatCurrency(value)}
               />
-              <Tooltip 
+              <Tooltip
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
                     return (
                       <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-600/50 rounded-lg p-3">
                         <p className="text-slate-300 font-medium">{label}</p>
                         <p className="text-green-400">
-                          Monthly Income: {formatCurrencyDetailed(payload[0].value)}
+                          Monthly Income:{" "}
+                          {formatCurrencyDetailed(payload[0].value)}
                         </p>
                       </div>
                     );
@@ -177,8 +221,8 @@ export default function ChartPanel({ results }: ChartPanelProps) {
                   return null;
                 }}
               />
-              <Bar 
-                dataKey="income" 
+              <Bar
+                dataKey="income"
                 fill={chartColors.secondary}
                 name="Monthly Income"
                 radius={[4, 4, 0, 0]}
@@ -187,19 +231,19 @@ export default function ChartPanel({ results }: ChartPanelProps) {
           </ResponsiveContainer>
         );
 
-      case 'cumulative':
+      case "cumulative":
         return (
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="year" 
+              <XAxis
+                dataKey="year"
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
                 tickFormatter={(value) => formatCurrency(value)}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -224,25 +268,25 @@ export default function ChartPanel({ results }: ChartPanelProps) {
           </ResponsiveContainer>
         );
 
-      case 'annual':
+      case "annual":
         return (
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="year" 
+              <XAxis
+                dataKey="year"
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
               />
-              <YAxis 
+              <YAxis
                 stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF' }}
+                tick={{ fill: "#9CA3AF" }}
                 tickFormatter={(value) => formatCurrency(value)}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar 
-                dataKey="annualDividendIncome" 
+              <Bar
+                dataKey="annualDividendIncome"
                 fill={chartColors.secondary}
                 name="Annual Dividend Income"
                 radius={[4, 4, 0, 0]}
@@ -264,12 +308,14 @@ export default function ChartPanel({ results }: ChartPanelProps) {
       {/* Header with Tabs */}
       <div className="bg-gradient-to-r from-slate-700/50 to-slate-600/50 p-4 border-b border-slate-600/50">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">Investment Projections</h2>
+          <h2 className="text-lg font-semibold text-white">
+            Investment Projections
+          </h2>
           <div className="text-sm text-slate-400">
             {results.monthlyResults.length} months projected
           </div>
         </div>
-        
+
         <div className="flex space-x-1 bg-slate-800/50 rounded-lg p-1">
           {chartTabs.map((tab) => {
             const Icon = tab.icon;
@@ -281,7 +327,7 @@ export default function ChartPanel({ results }: ChartPanelProps) {
                   "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all",
                   activeChart === tab.id
                     ? "bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg"
-                    : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/50"
+                    : "text-slate-400 hover:text-slate-300 hover:bg-slate-700/50",
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -293,9 +339,7 @@ export default function ChartPanel({ results }: ChartPanelProps) {
       </div>
 
       {/* Chart Content */}
-      <div className="p-6">
-        {renderChart()}
-      </div>
+      <div className="p-6">{renderChart()}</div>
     </motion.div>
   );
 }

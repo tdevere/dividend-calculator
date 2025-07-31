@@ -15,18 +15,21 @@ This guide will help you deploy your Dividend Calculator to Microsoft Azure App 
 #### Step 1: Setup Azure Resources
 
 1. **Install and login to Azure CLI**:
+
    ```bash
    az login
    ```
 
 2. **Run the deployment script**:
-   
+
    **Windows (PowerShell):**
+
    ```powershell
    .\deploy-azure.ps1
    ```
-   
+
    **Linux/Mac:**
+
    ```bash
    chmod +x deploy-azure.sh
    ./deploy-azure.sh
@@ -38,21 +41,23 @@ This guide will help you deploy your Dividend Calculator to Microsoft Azure App 
 2. Navigate to **Settings** → **Secrets and variables** → **Actions**
 3. Add the following secrets:
 
-   | Secret Name | Value | Description |
-   |-------------|-------|-------------|
-   | `AZURE_WEBAPP_NAME` | `dividend-calculator-app` | Your Azure App Service name |
-   | `AZURE_WEBAPP_PUBLISH_PROFILE` | Content of `publish-profile.xml` | Azure publish profile |
+   | Secret Name                    | Value                            | Description                 |
+   | ------------------------------ | -------------------------------- | --------------------------- |
+   | `AZURE_WEBAPP_NAME`            | `dividend-calculator-app`        | Your Azure App Service name |
+   | `AZURE_WEBAPP_PUBLISH_PROFILE` | Content of `publish-profile.xml` | Azure publish profile       |
 
 #### Step 3: Choose Your Runner Environment
 
 You have two options for running your GitHub Actions workflow:
 
 ##### Option A: GitHub-Hosted Runners (Default)
+
 - **Pros**: No setup required, always up-to-date, isolated environment
 - **Cons**: Limited to 2000 minutes/month on free tier, no customization
 - **Best for**: Most projects, quick setup, standard builds
 
 ##### Option B: Self-Hosted Runners (Advanced)
+
 - **Pros**: Unlimited build minutes, full control, custom software, faster builds
 - **Cons**: Requires setup and maintenance, security considerations
 - **Best for**: Enterprise environments, custom requirements, high-volume builds
@@ -62,6 +67,7 @@ You have two options for running your GitHub Actions workflow:
 If you choose self-hosted runners, follow these steps:
 
 **1. Access Runner Configuration**
+
 - Go to your repository: `https://github.com/YOUR_USERNAME/dividend-calculator`
 - Navigate to **Settings** → **Actions** → **Runners**
 - Click **"New self-hosted runner"**
@@ -70,6 +76,7 @@ If you choose self-hosted runners, follow these steps:
 **2. Prepare Your Runner Machine**
 
 **Linux (Ubuntu/Debian) - Recommended:**
+
 ```bash
 # Update system
 sudo apt update && sudo apt upgrade -y
@@ -92,6 +99,7 @@ docker --version
 ```
 
 **Windows (PowerShell as Administrator):**
+
 ```powershell
 # Install Chocolatey package manager
 Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -129,6 +137,7 @@ tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
 **4. Install and Start Runner as Service**
 
 **Linux (systemd):**
+
 ```bash
 # Install the service
 sudo ./svc.sh install
@@ -144,6 +153,7 @@ sudo systemctl enable actions.runner.YOUR_USERNAME-dividend-calculator.YOUR_RUNN
 ```
 
 **Windows (as Service):**
+
 ```powershell
 # Run as Administrator
 .\svc.cmd install
@@ -157,10 +167,10 @@ Modify `.github/workflows/azure-deploy.yml` to use your self-hosted runner:
 ```yaml
 jobs:
   build:
-    runs-on: self-hosted  # ← Change from 'ubuntu-latest'
-    
+    runs-on: self-hosted # ← Change from 'ubuntu-latest'
+
   deploy:
-    runs-on: self-hosted  # ← Change from 'ubuntu-latest'
+    runs-on: self-hosted # ← Change from 'ubuntu-latest'
 ```
 
 **6. Runner Security Best Practices**
@@ -204,6 +214,7 @@ You can add custom labels to target specific runners:
 ```
 
 Then in your workflow:
+
 ```yaml
 jobs:
   build:
@@ -212,17 +223,18 @@ jobs:
 
 **Troubleshooting Self-Hosted Runners:**
 
-| Issue | Solution |
-|-------|----------|
-| Runner offline | Check service: `sudo systemctl status actions.runner.*` |
-| Build fails | Verify Node.js version: `node --version` |
-| Docker issues | Add runner user to docker group: `sudo usermod -aG docker github-runner` |
+| Issue             | Solution                                                                           |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| Runner offline    | Check service: `sudo systemctl status actions.runner.*`                            |
+| Build fails       | Verify Node.js version: `node --version`                                           |
+| Docker issues     | Add runner user to docker group: `sudo usermod -aG docker github-runner`           |
 | Permission denied | Check file ownership: `sudo chown -R github-runner:github-runner ~/actions-runner` |
-| Network issues | Verify firewall and proxy settings |
+| Network issues    | Verify firewall and proxy settings                                                 |
 
 #### Step 4: Push to GitHub
 
 1. **Initialize Git repository** (if not already done):
+
    ```bash
    git init
    git add .
@@ -230,6 +242,7 @@ jobs:
    ```
 
 2. **Add GitHub remote and push**:
+
    ```bash
    git remote add origin https://github.com/yourusername/dividend-calculator.git
    git branch -M main
@@ -308,14 +321,14 @@ az container create \
 
 Set these in Azure App Service **Configuration** → **Application settings**:
 
-| Variable | Value | Description |
-|----------|-------|-------------|
-| `NODE_ENV` | `production` | Node.js environment |
-| `WEBSITE_NODE_DEFAULT_VERSION` | `~20` | Node.js version |
-| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `true` | Enable build during deployment |
-| `ENABLE_ORYX_BUILD` | `true` | Enable Oryx build system |
-| `PRE_BUILD_COMMAND` | `npm ci` | Command before build |
-| `BUILD_COMMAND` | `npm run build` | Build command |
+| Variable                         | Value           | Description                    |
+| -------------------------------- | --------------- | ------------------------------ |
+| `NODE_ENV`                       | `production`    | Node.js environment            |
+| `WEBSITE_NODE_DEFAULT_VERSION`   | `~20`           | Node.js version                |
+| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `true`          | Enable build during deployment |
+| `ENABLE_ORYX_BUILD`              | `true`          | Enable Oryx build system       |
+| `PRE_BUILD_COMMAND`              | `npm ci`        | Command before build           |
+| `BUILD_COMMAND`                  | `npm run build` | Build command                  |
 
 ### Custom Domain (Optional)
 
@@ -327,6 +340,7 @@ Set these in Azure App Service **Configuration** → **Application settings**:
 ### Monitoring and Logging
 
 1. **Enable Application Insights**:
+
    ```bash
    az extension add --name application-insights
    az monitor app-insights component create \
@@ -413,6 +427,7 @@ az webapp show --resource-group dividend-calculator-rg --name dividend-calculato
 ### Quick Commands Reference
 
 **Check Runner Status:**
+
 ```bash
 # Linux
 sudo systemctl status actions.runner.*
@@ -423,6 +438,7 @@ sudo systemctl status actions.runner.*
 ```
 
 **Restart Runner:**
+
 ```bash
 # Linux
 sudo systemctl restart actions.runner.*
@@ -434,6 +450,7 @@ sudo ./svc.sh restart
 ```
 
 **View Runner Logs:**
+
 ```bash
 # Linux (live logs)
 sudo journalctl -u actions.runner.* -f
@@ -443,6 +460,7 @@ Get-EventLog -LogName Application -Source "GitHub Actions Runner"
 ```
 
 **Update Runner:**
+
 ```bash
 # 1. Stop runner
 sudo ./svc.sh stop
@@ -462,6 +480,7 @@ sudo ./svc.sh start
 ```
 
 **Runner Maintenance Schedule:**
+
 - **Weekly**: Check runner status and logs
 - **Monthly**: Update runner software
 - **Quarterly**: Review security and access permissions
@@ -469,6 +488,7 @@ sudo ./svc.sh start
 ### Runner Performance Optimization
 
 **For High-Volume Builds:**
+
 ```yaml
 # .github/workflows/azure-deploy.yml
 jobs:
@@ -486,6 +506,7 @@ jobs:
 ```
 
 **Resource Monitoring:**
+
 ```bash
 # Monitor CPU and Memory during builds
 htop

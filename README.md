@@ -18,16 +18,16 @@ A modern, interactive web application for exploring dividend investment strategi
 
 The calculator includes 8 carefully selected high-yield dividend investments:
 
-| Symbol | Name | Type | Dividend Yield | Annual Growth |
-|--------|------|------|----------------|---------------|
-| **QYLD** | Global X NASDAQ 100 Covered Call ETF | ETF | 11.2% | 2.5% |
-| **JEPI** | JPMorgan Equity Premium Income ETF | ETF | 8.9% | 6.8% |
-| **SCHD** | Schwab US Dividend Equity ETF | ETF | 3.6% | 12.1% |
-| **BST** | BlackRock Science and Technology Trust | CEF | 9.8% | 8.2% |
-| **HTD** | John Hancock Tax-Advantaged Dividend Income Fund | CEF | 8.7% | 5.9% |
-| **O** | Realty Income Corporation | REIT | 5.8% | 7.4% |
-| **AGNC** | AGNC Investment Corp. | mREIT | 14.2% | 1.8% |
-| **RYLD** | Global X Russell 2000 Covered Call ETF | ETF | 9.6% | 3.2% |
+| Symbol   | Name                                             | Type  | Dividend Yield | Annual Growth |
+| -------- | ------------------------------------------------ | ----- | -------------- | ------------- |
+| **QYLD** | Global X NASDAQ 100 Covered Call ETF             | ETF   | 11.2%          | 2.5%          |
+| **JEPI** | JPMorgan Equity Premium Income ETF               | ETF   | 8.9%           | 6.8%          |
+| **SCHD** | Schwab US Dividend Equity ETF                    | ETF   | 3.6%           | 12.1%         |
+| **BST**  | BlackRock Science and Technology Trust           | CEF   | 9.8%           | 8.2%          |
+| **HTD**  | John Hancock Tax-Advantaged Dividend Income Fund | CEF   | 8.7%           | 5.9%          |
+| **O**    | Realty Income Corporation                        | REIT  | 5.8%           | 7.4%          |
+| **AGNC** | AGNC Investment Corp.                            | mREIT | 14.2%          | 1.8%          |
+| **RYLD** | Global X Russell 2000 Covered Call ETF           | ETF   | 9.6%           | 3.2%          |
 
 ## � Quick Start
 
@@ -115,6 +115,7 @@ Deploy to Microsoft Azure with automated CI/CD:
 ```
 
 **Features:**
+
 - Automated GitHub Actions workflow
 - SSL certificates included
 - Custom domain support
@@ -165,12 +166,12 @@ Edit `src/types/investment.ts`:
 export const DIVIDEND_STOCKS: DividendStock[] = [
   // Add your custom stock
   {
-    symbol: 'VYM',
-    name: 'Vanguard High Dividend Yield ETF',
-    type: 'ETF',
+    symbol: "VYM",
+    name: "Vanguard High Dividend Yield ETF",
+    type: "ETF",
     dividendYield: 2.9,
     annualGrowthRate: 8.5,
-    allocation: 10
+    allocation: 10,
   },
   // ... existing stocks
 ];
@@ -196,8 +197,14 @@ Charts are built with Recharts. Customize in `src/components/ChartPanel.tsx`:
 ```typescript
 // Custom chart colors
 const chartColors = [
-  '#22d3ee', '#a855f7', '#f59e0b', '#10b981',
-  '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16'
+  "#22d3ee",
+  "#a855f7",
+  "#f59e0b",
+  "#10b981",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#84cc16",
 ];
 ```
 

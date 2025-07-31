@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { DollarSign, Calendar, TrendingUp, RotateCcw, Settings } from 'lucide-react';
-import { InvestmentParameters } from '@/types/investment';
-import { DividendCalculator, formatCurrency } from '@/utils/dividendCalculator';
-import { fadeInUp, cn } from '@/utils/utils';
+import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  DollarSign,
+  Calendar,
+  TrendingUp,
+  RotateCcw,
+  Settings,
+} from "lucide-react";
+import { InvestmentParameters } from "@/types/investment";
+import { DividendCalculator, formatCurrency } from "@/utils/dividendCalculator";
+import { fadeInUp, cn } from "@/utils/utils";
 
 interface ControlPanelProps {
   params: InvestmentParameters;
@@ -13,17 +19,26 @@ interface ControlPanelProps {
   calculator: DividendCalculator;
 }
 
-export default function ControlPanel({ params, onParamsChange, calculator }: ControlPanelProps) {
+export default function ControlPanel({
+  params,
+  onParamsChange,
+  calculator,
+}: ControlPanelProps) {
   const stocks = calculator.getAllStocks();
 
-  const handleSliderChange = (field: keyof InvestmentParameters, value: number) => {
+  const handleSliderChange = (
+    field: keyof InvestmentParameters,
+    value: number,
+  ) => {
     onParamsChange({ [field]: value });
   };
 
   const handleAllocationChange = (symbol: string, percentage: number) => {
     const updatedAllocations = [...params.allocations];
-    const existingIndex = updatedAllocations.findIndex(alloc => alloc.symbol === symbol);
-    
+    const existingIndex = updatedAllocations.findIndex(
+      (alloc) => alloc.symbol === symbol,
+    );
+
     if (existingIndex >= 0) {
       if (percentage === 0) {
         updatedAllocations.splice(existingIndex, 1);
@@ -33,7 +48,7 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
     } else if (percentage > 0) {
       updatedAllocations.push({ symbol, percentage });
     }
-    
+
     onParamsChange({ allocations: updatedAllocations });
   };
 
@@ -42,7 +57,10 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
   };
 
   const getAllocationForStock = (symbol: string) => {
-    return params.allocations.find(alloc => alloc.symbol === symbol)?.percentage || 0;
+    return (
+      params.allocations.find((alloc) => alloc.symbol === symbol)?.percentage ||
+      0
+    );
   };
 
   const resetToDefaults = () => {
@@ -66,7 +84,9 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-lg flex items-center justify-center">
               <Settings className="w-4 h-4 text-white" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Investment Parameters</h2>
+            <h2 className="text-lg font-semibold text-white">
+              Investment Parameters
+            </h2>
           </div>
           <motion.button
             onClick={resetToDefaults}
@@ -98,7 +118,9 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
             max="1000000"
             step="1000"
             value={params.initialInvestment}
-            onChange={(e) => handleSliderChange('initialInvestment', parseInt(e.target.value))}
+            onChange={(e) =>
+              handleSliderChange("initialInvestment", parseInt(e.target.value))
+            }
             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
           />
           <div className="flex justify-between text-xs text-slate-500">
@@ -124,7 +146,12 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
             max="10000"
             step="100"
             value={params.monthlyContribution}
-            onChange={(e) => handleSliderChange('monthlyContribution', parseInt(e.target.value))}
+            onChange={(e) =>
+              handleSliderChange(
+                "monthlyContribution",
+                parseInt(e.target.value),
+              )
+            }
             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
           />
           <div className="flex justify-between text-xs text-slate-500">
@@ -150,7 +177,9 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
             max="40"
             step="1"
             value={params.investmentDuration}
-            onChange={(e) => handleSliderChange('investmentDuration', parseInt(e.target.value))}
+            onChange={(e) =>
+              handleSliderChange("investmentDuration", parseInt(e.target.value))
+            }
             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
           />
           <div className="flex justify-between text-xs text-slate-500">
@@ -162,20 +191,26 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
         {/* Reinvest Dividends Toggle */}
         <div className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
           <div>
-            <div className="text-sm font-medium text-slate-300">Reinvest Dividends</div>
-            <div className="text-xs text-slate-500">Automatically reinvest dividend payments</div>
+            <div className="text-sm font-medium text-slate-300">
+              Reinvest Dividends
+            </div>
+            <div className="text-xs text-slate-500">
+              Automatically reinvest dividend payments
+            </div>
           </div>
           <button
-            onClick={() => onParamsChange({ reinvestDividends: !params.reinvestDividends })}
+            onClick={() =>
+              onParamsChange({ reinvestDividends: !params.reinvestDividends })
+            }
             className={cn(
               "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-              params.reinvestDividends ? "bg-cyan-500" : "bg-slate-600"
+              params.reinvestDividends ? "bg-cyan-500" : "bg-slate-600",
             )}
           >
             <span
               className={cn(
                 "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                params.reinvestDividends ? "translate-x-6" : "translate-x-1"
+                params.reinvestDividends ? "translate-x-6" : "translate-x-1",
               )}
             />
           </button>
@@ -184,13 +219,17 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
         {/* Portfolio Allocation */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-slate-300">Portfolio Allocation</h3>
-            <span className={cn(
-              "text-xs px-2 py-1 rounded-full",
-              Math.abs(getTotalAllocation() - 100) < 0.1 
-                ? "bg-green-500/20 text-green-400" 
-                : "bg-yellow-500/20 text-yellow-400"
-            )}>
+            <h3 className="text-sm font-medium text-slate-300">
+              Portfolio Allocation
+            </h3>
+            <span
+              className={cn(
+                "text-xs px-2 py-1 rounded-full",
+                Math.abs(getTotalAllocation() - 100) < 0.1
+                  ? "bg-green-500/20 text-green-400"
+                  : "bg-yellow-500/20 text-yellow-400",
+              )}
+            >
               {getTotalAllocation().toFixed(0)}%
             </span>
           </div>
@@ -202,8 +241,12 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
                 <div key={stock.symbol} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-sm font-medium text-white">{stock.symbol}</span>
-                      <div className="text-xs text-slate-400">{stock.name.slice(0, 25)}...</div>
+                      <span className="text-sm font-medium text-white">
+                        {stock.symbol}
+                      </span>
+                      <div className="text-xs text-slate-400">
+                        {stock.name.slice(0, 25)}...
+                      </div>
                     </div>
                     <span className="text-sm font-bold text-cyan-400">
                       {allocation.toFixed(0)}%
@@ -215,7 +258,12 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
                     max="50"
                     step="1"
                     value={allocation}
-                    onChange={(e) => handleAllocationChange(stock.symbol, parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleAllocationChange(
+                        stock.symbol,
+                        parseInt(e.target.value),
+                      )
+                    }
                     className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer slider-small"
                   />
                 </div>
@@ -236,7 +284,7 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
           cursor: pointer;
           box-shadow: 0 0 10px rgba(0, 217, 255, 0.5);
         }
-        
+
         .slider-small::-webkit-slider-thumb {
           appearance: none;
           height: 16px;
@@ -246,7 +294,7 @@ export default function ControlPanel({ params, onParamsChange, calculator }: Con
           cursor: pointer;
           box-shadow: 0 0 8px rgba(0, 217, 255, 0.3);
         }
-        
+
         .slider::-moz-range-thumb {
           height: 20px;
           width: 20px;
