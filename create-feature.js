@@ -37,7 +37,8 @@ async function createFeatureRequest(description) {
 
     // Trigger GitHub Actions workflow
     try {
-        const command = `gh workflow run feature-automation.yml --field feature_description="${description}" --field feature_type="${featureType}" --field auto_merge=false`;
+        // Use workflow file name instead of display name to avoid emoji encoding issues
+        const command = `gh workflow run feature-automation.yml --field feature_description="${description}" --field feature_type="${featureType}" --field auto_merge="false"`;
         execSync(command, { stdio: 'inherit' });
 
         console.log(`✅ Feature request submitted successfully!`);
