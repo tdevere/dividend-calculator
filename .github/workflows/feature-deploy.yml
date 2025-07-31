@@ -194,13 +194,16 @@ jobs:
 
             if (pulls.length > 0) {
               const pull = pulls[0];
+              const branchName = context.ref.replace('refs/heads/', '');
+              const commitSha = context.sha.substring(0, 7);
+              
               const comment = `## 🚀 Feature Branch Deployed to Development Slot
 
 **🌐 Live Preview:** https://dividend-calculator-app-dev.azurewebsites.net
 
 ### 📋 Deployment Details
-- **Branch:** \`${context.ref.replace('refs/heads/', '')}\`
-- **Commit:** \`${context.sha.substring(0, 7)}\`
+- **Branch:** \`${branchName}\`
+- **Commit:** \`${commitSha}\`
 - **Environment:** Development Slot
 - **Status:** ✅ Successfully Deployed
 
