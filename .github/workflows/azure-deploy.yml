@@ -35,54 +35,18 @@ jobs:
       - name: Create production node_modules
         run: npm ci --production
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-files
-          path: |
-            .next/
-            public/
-            package.json
-            package-lock.json
-            next.config.ts
-            node_modules/
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-files
-          path: ./artifacts
-
-      - name: Create deployment package
+      - name: Prepare deployment package
         run: |
-          # Create a clean deployment directory
-          mkdir -p deploy
-          
-          # Copy build artifacts
-          cp -r artifacts/.next deploy/
-          cp -r artifacts/public deploy/
-          cp artifacts/package.json deploy/
-          cp artifacts/package-lock.json deploy/
-          cp artifacts/next.config.ts deploy/
-          cp -r artifacts/node_modules deploy/
+          mkdir -p deploy-package
+          cp -r .next deploy-package/
+          cp -r public deploy-package/
+          cp package.json deploy-package/
+          cp package-lock.json deploy-package/
+          cp next.config.ts deploy-package/
+          cp -r node_modules deploy-package/
           
           # Create server.js for Azure
-          cat > deploy/server.js << 'EOF'
+          cat > deploy-package/server.js << 'EOF'
           const { createServer } = require('http')
           const { parse } = require('url')
           const next = require('next')
@@ -110,8 +74,27 @@ jobs:
             })
           })
           EOF
-          
-          # Create web.config for Azure
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package
+          path: deploy-package/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-package
+          path: ./deploy
+
+      - name: Create web.config for Azure
+        run: |
           cat > deploy/web.config << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <configuration>
