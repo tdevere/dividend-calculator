@@ -1,0 +1,89 @@
+name: Deploy Feature Branch to Dev Slot
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package*.json'
+      - 'next.config.*'
+      - 'tailwind.config.*'
+      - 'tsconfig.json'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Feature branch to deploy'
+        required: false
+        default: ''
+        type: string
+      force_deploy:
+        description: 'Force deploy even without changes'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: feature-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy-feature:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Feature Deployment Info
+        run: |
+          echo "🚀 Deploying feature branch to dev slot"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Event: ${{ github.event_name }}"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Quality Checks
+        run: |
+          echo "🔍 Running quality checks..."
+          npm run type-check
+          npm run lint
+
+      - name: Build Application
+        run: |
+          echo "🏗️ Building Next.js application..."
+          npm run build
+
+      - name: Prepare deployment package
+        run: |
+          echo "📦 Preparing deployment package..."
+          mkdir -p deploy-package
+          cp -r .next deploy-package/
+          cp -r public deploy-package/
+          cp package*.json deploy-package/
+          cp next.config.* deploy-package/ 2>/dev/null || true
+
+      - name: Deploy to Azure Dev Slot
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          slot-name: 'dev'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_DEV }}
+          package: ./deploy-package
+
+      - name: Feature Deployment Summary
+        run: |
+          echo "## 🎯 Feature Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed to:** Dev Slot" >> $GITHUB_STEP_SUMMARY
+          echo "**URL:** https://${{ secrets.AZURE_WEBAPP_NAME }}-dev.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
