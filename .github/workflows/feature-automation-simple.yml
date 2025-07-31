@@ -242,27 +242,16 @@ jobs:
             echo "   Files: src/components/${{ steps.analyze.outputs.component_name }}.tsx"
           fi
 
-      - name: Trigger Feature Deployment
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Feature Deployment Info
         run: |
-          echo "🚀 Triggering feature deployment to dev slot..."
-          
-          # Wait a moment for the branch to be available
-          sleep 5
-          
-          # Trigger the feature deployment workflow
-          if gh workflow run "Deploy Feature Branch to Dev Slot" \
-            --ref "${{ steps.create_branch.outputs.branch_name }}" \
-            -f branch="${{ steps.create_branch.outputs.branch_name }}" \
-            -f force_deploy=true; then
-            echo "✅ Feature deployment triggered successfully!"
-            echo "🌐 Your feature will be available at: https://${{ secrets.AZURE_WEBAPP_NAME || 'your-app' }}-dev.azurewebsites.net"
-          else
-            echo "⚠️ Failed to trigger automatic deployment"
-            echo "💡 You can manually deploy by running:"
-            echo "   gh workflow run 'Deploy Feature Branch to Dev Slot' --ref ${{ steps.create_branch.outputs.branch_name }}"
-          fi
+          echo "🚀 Feature branch pushed successfully!"
+          echo "📋 Branch: ${{ steps.create_branch.outputs.branch_name }}"
+          echo "🔄 The feature deployment workflow will automatically trigger"
+          echo "🌐 Once deployed, your feature will be available at:"
+          echo "   https://${{ secrets.AZURE_WEBAPP_NAME || 'dividend-calculator-app' }}-dev.azurewebsites.net"
+          echo ""
+          echo "⏰ Deployment typically takes 2-3 minutes to complete"
+          echo "📊 Monitor progress at: https://github.com/${{ github.repository }}/actions"
 
       - name: Workflow Summary
         if: always()
