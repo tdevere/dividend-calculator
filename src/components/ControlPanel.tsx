@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  DollarSign,
-  Calendar,
-  TrendingUp,
-  RotateCcw,
-  Settings,
-} from "lucide-react";
 import { InvestmentParameters } from "@/types/investment";
 import { DividendCalculator, formatCurrency } from "@/utils/dividendCalculator";
-import { fadeInUp, cn } from "@/utils/utils";
+import { cn, fadeInUp } from "@/utils/utils";
+import { motion } from "framer-motion";
+import {
+  Calendar,
+  DollarSign,
+  RotateCcw,
+  Settings,
+  TrendingUp,
+} from "lucide-react";
 
 interface ControlPanelProps {
   params: InvestmentParameters;

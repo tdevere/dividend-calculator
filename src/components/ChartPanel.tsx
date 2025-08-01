@@ -1,28 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  Legend,
-} from "recharts";
-import { BarChart3, TrendingUp, Calendar, DollarSign } from "lucide-react";
 import { SimulationResults } from "@/types/investment";
 import {
   formatCurrency,
   formatCurrencyDetailed,
 } from "@/utils/dividendCalculator";
-import { fadeInUp, chartColors, cn } from "@/utils/utils";
+import { chartColors, cn, fadeInUp } from "@/utils/utils";
+import { motion } from "framer-motion";
+import { BarChart3, Calendar, DollarSign, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 interface ChartPanelProps {
   results: SimulationResults | null;
@@ -55,7 +55,7 @@ export default function ChartPanel({ results }: ChartPanelProps) {
   }
 
   // Prepare chart data
-  const chartData = results.yearlyResults.map((year, index) => ({
+  const chartData = results.yearlyResults.map((year) => ({
     year: year.year,
     portfolioValue: year.portfolioValue,
     totalInvestment: year.totalInvestment,

@@ -1,0 +1,141 @@
+name: Deploy Feature Branch to Dev Slot
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package*.json'
+      - 'next.config.*'
+      - 'tailwind.config.*'
+      - 'tsconfig.json'
+  workflow_dispatch:
+
+concurrency:
+  group: feature-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-to-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment Information
+        run: |
+          echo "🚀 Deploying Feature Branch to Development Slot"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Dev URL: https://dividend-calculator-app-dev.azurewebsites.net"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Build application
+        run: npm run build
+
+      - name: Prepare deployment package
+        run: |
+          mkdir -p deploy-package
+          cp -r src deploy-package/
+          cp -r public deploy-package/
+          cp package.json deploy-package/
+          cp package-lock.json deploy-package/
+          cp next.config.js deploy-package/
+          cp tsconfig.json deploy-package/
+          cp tailwind.config.ts deploy-package/
+          cp postcss.config.mjs deploy-package/
+          cp eslint.config.mjs deploy-package/
+          cp next-env.d.ts deploy-package/
+          
+          if [ -d ".next" ]; then
+            cp -r .next deploy-package/
+          fi
+          
+          cat > deploy-package/server.js << 'EOF'
+          const { createServer } = require('http')
+          const { parse } = require('url')
+          const next = require('next')
+          
+          const dev = process.env.NODE_ENV !== 'production'
+          const hostname = process.env.WEBSITE_HOSTNAME || 'localhost'
+          const port = process.env.PORT || 3000
+          
+          const app = next({ dev, hostname, port })
+          const handle = app.getRequestHandler()
+          
+          app.prepare().then(() => {
+            createServer(async (req, res) => {
+              try {
+                const parsedUrl = parse(req.url, true)
+                await handle(req, res, parsedUrl)
+              } catch (err) {
+                console.error('Error occurred handling', req.url, err)
+                res.statusCode = 500
+                res.end('internal server error')
+              }
+            }).listen(port, (err) => {
+              if (err) throw err
+              console.log(`> Ready on http://${hostname}:${port}`)
+            })
+          })
+          EOF
+
+      - name: Create web.config
+        run: |
+          cat > deploy-package/web.config << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <system.webServer>
+              <handlers>
+                <add name="iisnode" path="server.js" verb="*" modules="iisnode"/>
+              </handlers>
+              <rewrite>
+                <rules>
+                  <rule name="StaticContent">
+                    <action type="Rewrite" url="public{REQUEST_URI}"/>
+                  </rule>
+                  <rule name="DynamicContent">
+                    <conditions>
+                      <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="True"/>
+                    </conditions>
+                    <action type="Rewrite" url="server.js"/>
+                  </rule>
+                </rules>
+              </rewrite>
+              <httpErrors existingResponse="PassThrough" />
+              <iisnode watchedFiles="web.config;*.js"/>
+            </system.webServer>
+          </configuration>
+          EOF
+
+      - name: Deploy to Azure Development Slot
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          slot-name: dev
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE_DEV }}
+          package: ./deploy-package
+
+      - name: Deployment Success
+        run: |
+          echo "🎉 Feature branch deployed successfully!"
+          echo "🌐 Public URL: https://dividend-calculator-app-dev.azurewebsites.net"
+          echo "🔍 Branch: ${{ github.ref_name }}"
+          echo "📝 Commit: ${{ github.sha }}"
